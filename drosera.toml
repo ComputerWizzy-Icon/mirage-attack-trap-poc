@@ -1,0 +1,16 @@
+ethereum_rpc = "https://0xrpc.io/hoodi"
+drosera_rpc = "https://relay.hoodi.drosera.io"
+
+eth_chain_id = 560048
+drosera_address = "0x91cB447BaFc6e0EA0F4Fe056F5a9b1F14bb06e5D"
+
+[traps]
+
+[traps.mirage_attack]
+path = "solidity-trap/out/MirageTrap.sol/MirageTrap.json"
+response_contract = "YOUR_RESPONDER_CONTRACT"
+response_function = "handleMirageAttack(string)"
+block_sample_size = 5
+cooldown_period_blocks = 0
+private_trap = true
+whitelist = ["0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"]
