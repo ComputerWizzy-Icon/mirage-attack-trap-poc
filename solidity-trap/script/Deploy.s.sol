@@ -1,14 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "src/MockTrap.sol";
 import "forge-std/Script.sol";
+import "../src/MirageFeed.sol";
+import "../src/MirageTrap.sol";
+import "../src/MirageResponder.sol";
 
-contract DeployMockTrap is Script {
-    function run() external returns (address) {
+contract Deploy is Script {
+    function run()
+        external
+        returns (address trap, address feed, address responder)
+    {
         vm.startBroadcast();
-        MockTrap trap = new MockTrap();
+
+        MirageFeed f = new MirageFeed();
+        MirageResponder r = new MirageResponder();
+        MirageTrap t = new MirageTrap(address(f)); // only feed here
+
         vm.stopBroadcast();
-        return address(trap);
+
+        return (address(t), address(f), address(r));
     }
 }
