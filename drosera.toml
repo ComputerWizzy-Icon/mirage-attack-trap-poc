@@ -13,7 +13,7 @@ drosera_address = "0x91cB447BaFc6e0EA0F4Fe056F5a9b1F14bb06e5D"
 path = "solidity-trap/out/MirageTrap.sol/MirageTrap.json"
 
 # MUST point to the deployed MirageResponder
-response_contract = "0xcC76C927347955aEe0e7009A4871d17b38C977bf"
+response_contract = "0x78C96c46aCF80006B07Ea537644161C74575B0b9"
 
 # MUST exactly match the responder signature
 response_function = "respond(bytes)"

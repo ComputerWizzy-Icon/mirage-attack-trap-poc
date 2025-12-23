@@ -6,6 +6,7 @@ contract MirageResponder {
 
     function respond(bytes calldata payload) external {
         (int256 deltaBps, uint256 ts) = abi.decode(payload, (int256, uint256));
+
         emit MirageAttackResponded(deltaBps, ts);
     }
 }

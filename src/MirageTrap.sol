@@ -14,26 +14,32 @@ interface IObservationFeed {
 }
 
 contract MirageTrap is ITrap {
-    IObservationFeed public constant feed =
-        IObservationFeed(0x06E48C756d2bFC6bE0E0C3381Fe8EA5F20cB6d5f);
+    // Hardcoded feed address (Drosera-safe PoC)
+    IObservationFeed public constant FEED =
+        IObservationFeed(0xB77002de62ad3D7Fe91924E80479E3285f3Db045);
+    int256 public constant THRESHOLD_BPS = 500;
 
     function collect() external view override returns (bytes memory) {
-        (int256 deltaBps, uint256 ts) = feed.latestObservation();
+        (int256 deltaBps, uint256 ts) = FEED.latestObservation();
         return abi.encode(deltaBps, ts);
     }
 
     function shouldRespond(
         bytes[] calldata data
     ) external pure override returns (bool, bytes memory) {
-        if (data.length == 0 || data[0].length == 0) return (false, bytes(""));
+        if (data.length == 0 || data[0].length == 0) {
+            return (false, bytes(""));
+        }
 
         (int256 deltaBps, uint256 ts) = abi.decode(data[0], (int256, uint256));
 
         if (ts == 0) return (false, bytes(""));
 
-        bool alert = deltaBps > 500 || deltaBps < -500;
+        bool alert = deltaBps > THRESHOLD_BPS || deltaBps < -THRESHOLD_BPS;
+
         if (!alert) return (false, bytes(""));
 
+        // Payload matches responder decode
         return (true, abi.encode(deltaBps, ts));
     }
 }
