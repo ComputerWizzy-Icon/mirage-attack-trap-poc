@@ -7,22 +7,17 @@ import "../src/MirageTrap.sol";
 import "../src/MirageResponder.sol";
 
 contract Deploy is Script {
-    function run()
-        external
-        returns (address trap, address feed, address responder)
-    {
+    function run() external {
         vm.startBroadcast();
 
-        MirageFeed f = new MirageFeed();
-        MirageResponder r = new MirageResponder();
-        MirageTrap t = new MirageTrap(); // no constructor args now
+        MirageFeed feed = new MirageFeed();
+        MirageResponder responder = new MirageResponder();
+        MirageTrap trap = new MirageTrap();
 
-        console.log("MirageFeed:", address(f));
-        console.log("MirageResponder:", address(r));
-        console.log("MirageTrap:", address(t));
+        console.log("MirageFeed:", address(feed));
+        console.log("MirageResponder:", address(responder));
+        console.log("MirageTrap:", address(trap));
 
         vm.stopBroadcast();
-
-        return (address(t), address(f), address(r));
     }
 }

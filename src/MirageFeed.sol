@@ -2,20 +2,20 @@
 pragma solidity ^0.8.20;
 
 contract MirageFeed {
-    address public owner;
-
     int256 public lastDeltaBps;
     uint256 public lastTimestamp;
 
-    event ObservationPushed(int256 deltaBps, uint256 timestamp);
+    address public owner;
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "not authorized");
-        _;
-    }
+    event ObservationPushed(int256 deltaBps, uint256 timestamp);
 
     constructor() {
         owner = msg.sender;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "NOT_OWNER");
+        _;
     }
 
     function pushObservation(
