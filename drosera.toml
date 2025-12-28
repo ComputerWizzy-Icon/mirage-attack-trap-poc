@@ -7,8 +7,8 @@ drosera_address = "0x91cB447BaFc6e0EA0F4Fe056F5a9b1F14bb06e5D"
 [traps.mirage_attack]
 path = "out/MirageTrap.sol/MirageTrap.json"
 
-# Deployed MirageResponder
-response_contract = "0x7ec91278416f2F74Ea11eD1178DA3d895B4D413f"
+# Deployed MirageResponder (latest)
+response_contract = "0xC6B77dE2241E925d92d199491b2031796d2e02Ec"
 
 # MUST exactly match responder ABI
 response_function = "respond(int256,uint256)"
@@ -20,6 +20,8 @@ min_number_of_operators = 1
 max_number_of_operators = 5
 
 private_trap = true
+
+# Operator wallet (your EVM address)
 whitelist = [
-  "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+  "0x14e424df0c35686CF58fC7D05860689041D300F6"
 ]

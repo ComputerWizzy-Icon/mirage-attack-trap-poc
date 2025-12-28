@@ -6,7 +6,7 @@ The system follows the standard Drosera architecture:
 
 **Feed → Trap → Responder**
 
-This PoC focuses on **signal validation**, not behavioral honeypots, deception logic, or caller analysis.
+This PoC focuses on **signal validation**, not deception logic, behavioral honeypots, or caller profiling.
 
 ---
 
@@ -40,9 +40,10 @@ The trap samples the latest feed observation and evaluates whether the signal ex
 
 **Detection logic:**
 
-- Reads `(deltaBps, timestamp)` from `MirageFeed`
+- Attempts to read `(deltaBps, timestamp)` from `MirageFeed`
+- Returns `bytes("")` if the feed address has no code or the call fails
 - Triggers if `deltaBps > +500` or `< -500`
-- Uses a rising-edge guard to avoid repeated alerts
+- Uses a rising-edge guard to prevent repeated alerts
 - Returns a typed payload `(int256 deltaBps, uint256 timestamp)`
 
 **Important properties:**
@@ -50,13 +51,13 @@ The trap samples the latest feed observation and evaluates whether the signal ex
 - Stateless
 - Deterministic
 - No constructor arguments (Drosera-safe)
+- Hardened against feed misconfiguration
 - Planner-safe guards included
 
 **What it does NOT do:**
 
 - No caller analysis
 - No probing
-- No timing heuristics
 - No honeypot behavior
 
 ---
@@ -79,11 +80,14 @@ This responder exists solely to surface detection events.
 
 The PoC is deployed using Foundry on **Hoodi (chain ID 560048)**.
 
-| Component           | Address                                      |
-|--------------------|----------------------------------------------|
-| **MirageTrap**      | `0xB5122C0dCFE243A0e8ad1bC7b680878e2ED05427` |
-| **MirageFeed**      | `0x902DA7fa5fE02De1D09C289B034C2f1238788bc9` |
-| **MirageResponder** | `0x7ec91278416f2F74Ea11eD1178DA3d895B4D413f` |
+| Component | Address |
+|---------|--------|
+| **MirageTrap** | `0x45335eA1Ad4a6b713c606fcF3587EE1F7Cf24cbE` |
+| **MirageFeed** | `0x7893321B15a0b83B18C106BaF2b0665646d1D4bE` |
+| **MirageResponder** | `0xC6B77dE2241E925d92d199491b2031796d2e02Ec` |
+
+The `MirageTrap` contract hardcodes the above `MirageFeed` address.  
+All deployment references are intentionally kept consistent.
 
 ---
 
@@ -101,7 +105,7 @@ Command used:
 forge script script/Deploy.s.sol:Deploy \
   --rpc-url $ETH_RPC_URL \
   --broadcast \
-  --private-key $PRIVATE_KEY \
+  --sender <DEPLOYER_ADDRESS> \
   -vv
 ````
 
@@ -139,19 +143,15 @@ Drosera operators call `collect()` on the trap, which snapshots:
 * `deltaBps`
 * `timestamp`
 
+If the feed is misconfigured or unavailable, `collect()` safely returns empty bytes instead of reverting.
+
 ### **Step 3: Detection**
 
-`shouldRespond()` compares the latest sample against the threshold.
-
-If the signal crosses into an abnormal range, the trap returns:
-
-```
-(int256 deltaBps, uint256 timestamp)
-```
+`shouldRespond()` compares the most recent sample against the threshold and checks for a rising-edge condition.
 
 ### **Step 4: Response**
 
-Drosera calls the responder, which emits an alert event.
+Drosera invokes the responder, which emits an alert event.
 
 ---
 
@@ -163,29 +163,27 @@ Manual simulation example:
 cast send <feed_address> "pushObservation(int256,uint256)" 800 123456
 ```
 
-After sampling, Drosera will trigger the responder if the threshold is exceeded.
-
 ---
 
 ## **🔥 What This PoC Demonstrates**
 
 * Correct Drosera trap wiring
+* Hardened sampling behavior
 * ABI-aligned trap → responder payloads
 * Planner-safe stateless detection
 * Rising-edge alert logic
-* Clean, reproducible deployment path
+* Clean and reproducible deployment path
 
 ---
 
-## **🛠 Future Extensions (Out of Scope for This PoC)**
+## **🛠 Future Extensions (Out of Scope)**
 
+* Timestamp staleness validation
+* Monotonic feed comparisons
 * Behavioral honeypots
-* Deceptive feeds
-* Caller profiling
-* Multi-signal scoring
-* Offchain analysis pipelines
+* Multi-signal aggregation
 
-These are intentionally **not implemented** here.
+These are intentionally excluded from this PoC.
 
 ---
 
@@ -194,11 +192,12 @@ These are intentionally **not implemented** here.
 This trap has been reviewed and corrected for:
 
 * Constructor safety
+* Feed call hardening
 * ABI alignment
+* Address consistency
 * TOML correctness
 * README accuracy
 
 It is suitable as a **reference Drosera PoC**.
 
-````
-
+```
