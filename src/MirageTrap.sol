@@ -11,15 +11,41 @@ interface IObservationFeed {
 }
 
 contract MirageTrap is ITrap {
-    // Hardcoded feed address (PoC, Drosera-compatible)
+    /**
+     * @dev Hardcoded feed address (PoC).
+     * Must match the deployed MirageFeed.
+     * collect() is hardened so a bad address will NOT brick sampling.
+     */
     IObservationFeed public constant FEED =
-        IObservationFeed(0xB77002de62ad3D7Fe91924E80479E3285f3Db045);
+        IObservationFeed(0x7893321B15a0b83B18C106BaF2b0665646d1D4bE);
 
     int256 public constant THRESH_BPS = 500; // ±500 bps
 
+    /**
+     * @notice Snapshot the latest feed observation.
+     * @dev Never reverts. Returns empty bytes on failure.
+     */
     function collect() external view override returns (bytes memory) {
-        (int256 deltaBps, uint256 ts) = FEED.latestObservation();
-        return abi.encode(deltaBps, ts);
+        address feedAddr = address(FEED);
+
+        // --- extcodesize guard ---
+        uint256 size;
+        assembly {
+            size := extcodesize(feedAddr)
+        }
+
+        if (size == 0) {
+            // Feed is not a contract
+            return bytes("");
+        }
+
+        // --- try/catch hardening ---
+        try FEED.latestObservation() returns (int256 deltaBps, uint256 ts) {
+            return abi.encode(deltaBps, ts);
+        } catch {
+            // Never brick sampling
+            return bytes("");
+        }
     }
 
     function shouldRespond(
@@ -35,20 +61,29 @@ contract MirageTrap is ITrap {
             (int256, uint256)
         );
 
+        // Optional sanity: ignore uninitialized / invalid timestamps
+        if (curTs == 0) {
+            return (false, bytes(""));
+        }
+
         bool curAlert = curDelta > THRESH_BPS || curDelta < -THRESH_BPS;
 
-        if (!curAlert) return (false, bytes(""));
+        if (!curAlert) {
+            return (false, bytes(""));
+        }
 
-        // Rising-edge guard (don’t spam while condition persists)
+        // Rising-edge guard: don’t spam alerts
         if (data.length > 1 && data[1].length > 0) {
             (int256 prevDelta, ) = abi.decode(data[1], (int256, uint256));
 
             bool prevAlert = prevDelta > THRESH_BPS || prevDelta < -THRESH_BPS;
 
-            if (prevAlert) return (false, bytes(""));
+            if (prevAlert) {
+                return (false, bytes(""));
+            }
         }
 
-        // Payload EXACTLY matches responder signature
+        // Payload EXACTLY matches responder ABI
         return (true, abi.encode(curDelta, curTs));
     }
 }
